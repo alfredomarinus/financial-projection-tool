@@ -18,12 +18,12 @@ def calculate_projections(data: FinancialInput) -> ProjectionResponse:
         )
     
     monthly_projections = []
-    yearly_summaries = []
+    monthly_summaries = []  # Changed from yearly_summaries to monthly_summaries
     current_savings = data.current_savings
     
     start_date = datetime.now().replace(day=1)
     
-    for month_num in range(data.projection_years * 12):
+    for month_num in range(data.projection_months):  # Changed from data.projection_years * 12 to data.projection_months
         current_date = start_date + timedelta(days=30.44 * month_num)
         year = current_date.year
         month = current_date.month
@@ -67,19 +67,19 @@ def calculate_projections(data: FinancialInput) -> ProjectionResponse:
         
         monthly_projections.append(projection)
         
-        # Create yearly summary
-        if month == 12 or month_num == data.projection_years * 12 - 1:
-            year_data = [p for p in monthly_projections if p.year == year]
-            yearly_summary = {
-                "year": year,
-                "total_gross_income": sum(p.gross_salary for p in year_data),
-                "total_net_income": sum(p.net_salary for p in year_data),
-                "total_commitments": sum(p.total_commitments for p in year_data),
-                "total_saved": sum(p.monthly_savings for p in year_data),
-                "end_of_year_savings": current_savings,
-                "months_included": len(year_data)
-            }
-            yearly_summaries.append(yearly_summary)
+        # Create monthly summary for each month
+        monthly_summary = {
+            "month": month,
+            "year": year,
+            "date": current_date.strftime("%Y-%m-%d"),
+            "gross_income": adjusted_gross_salary,
+            "net_income": adjusted_net_salary,
+            "total_commitments": total_adjusted_commitments,
+            "monthly_saved": monthly_savings,
+            "total_savings": current_savings,
+            "interest_earned": current_savings * monthly_interest_rate if month_num > 0 else 0
+        }
+        monthly_summaries.append(monthly_summary)
     
     # Calculate summary statistics
     final_savings = current_savings
@@ -92,7 +92,7 @@ def calculate_projections(data: FinancialInput) -> ProjectionResponse:
         "total_amount_saved": total_saved,
         "initial_monthly_savings": initial_monthly_savings,
         "final_monthly_savings": final_projection.monthly_savings,
-        "projection_period_years": data.projection_years,
+        "projection_period_months": data.projection_months,
         "total_interest_earned": sum(p.total_savings for p in monthly_projections) - data.current_savings - sum(p.monthly_savings for p in monthly_projections),
         "average_monthly_savings": sum(p.monthly_savings for p in monthly_projections) / len(monthly_projections),
         "financial_independence_months": None
@@ -108,5 +108,5 @@ def calculate_projections(data: FinancialInput) -> ProjectionResponse:
     return ProjectionResponse(
         summary=summary,
         monthly_projections=monthly_projections,
-        yearly_summary=yearly_summaries
+        monthly_summary=monthly_summaries
     )
