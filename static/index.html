@@ -98,17 +98,31 @@
         .commitment-item {
             display: flex;
             gap: 10px;
-            align-items: end;
-            margin-bottom: 15px;
-            padding: 15px;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px;
             background: #f7fafc;
             border-radius: 10px;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid #cbd5e0;
+            transition: border-left-color 0.3s ease;
+        }
+
+        .commitment-item.empty {
+            border-left-color: #7793b8; /* blueish gray */
+        }
+
+        .commitment-item.partial {
+            border-left-color: #e53e3e; /* red */
+        }
+
+        .commitment-item.filled {
+            border-left-color: #48bb78; /* green */
         }
 
         .commitment-item input, .commitment-item select {
             flex: 1;
             margin: 0;
+            
         }
 
         .btn {
@@ -155,6 +169,7 @@
 
         .slider-container {
             margin: 20px 0;
+            position: relative;
         }
 
         .slider {
@@ -164,6 +179,21 @@
             background: #e2e8f0;
             outline: none;
             appearance: none;
+            position: relative;
+            z-index: 2;
+        }
+
+        .slider::before {
+            content: '';
+            position: absolute;
+            height: 2px;
+            left: 0;
+            right: 0;
+            top: 50%;
+            background: #667eea;
+            transform: translateY(-50%);
+            pointer-events: none;
+            z-index: 1;
         }
 
         .slider::-webkit-slider-thumb {
@@ -174,6 +204,8 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             cursor: pointer;
             box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+            position: relative;
+            z-index: 1;
         }
 
         .slider::-moz-range-thumb {
@@ -184,6 +216,8 @@
             cursor: pointer;
             border: none;
             box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+            position: relative;
+            z-index: 1;
         }
 
         .slider-value {
@@ -192,6 +226,39 @@
             font-weight: 600;
             color: #667eea;
             margin-top: 10px;
+        }
+
+        .slider-tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            z-index: 10;
+        }
+
+        .slider-tooltip:after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
+        }
+
+        .slider-tooltip.show {
+            opacity: 1;
         }
 
         .results {
@@ -381,9 +448,10 @@
                 </button>
 
                 <div class="slider-container">
-                    <label for="projectionYears">Projection Years</label>
-                    <input type="range" id="projectionYears" class="slider" min="1" max="30" value="10">
-                    <div class="slider-value" id="yearsDisplay">10 years</div>
+                    <label for="projectionMonths" style="margin-bottom: 5px; display: block;">Projection Period</label>
+                    <input type="range" id="projectionMonths" class="slider" min="1" max="322" value="1">
+                    <div class="slider-tooltip" id="sliderTooltip"></div>
+                    <div class="slider-value" id="monthsDisplay">1 month (0 years)</div>
                 </div>
 
                 <button class="btn" onclick="calculateProjection()">
@@ -422,9 +490,12 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             addCommitment(); // Add first commitment field
-            updateYearsDisplay();
+            updateMonthsDisplay();
             
-            document.getElementById('projectionYears').addEventListener('input', updateYearsDisplay);
+            const slider = document.getElementById('projectionMonths');
+            slider.addEventListener('input', updateMonthsDisplay);
+            slider.addEventListener('mousemove', showSliderTooltip);
+            slider.addEventListener('mouseleave', hideSliderTooltip);
         });
 
         function toggleAdvanced() {
@@ -439,33 +510,109 @@
             }
         }
 
-        function updateYearsDisplay() {
-            const years = document.getElementById('projectionYears').value;
-            document.getElementById('yearsDisplay').textContent = `${years} year${years > 1 ? 's' : ''}`;
+        function getMonthName(monthIndex) {
+            const months = [
+                'January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'
+            ];
+            return months[monthIndex];
+        }
+
+        function getProjectionDate(monthsFromNow) {
+            const currentDate = new Date();
+            const futureDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + monthsFromNow, 1);
+            return {
+                month: futureDate.getMonth(),
+                year: futureDate.getFullYear()
+            };
+        }
+
+        function updateMonthsDisplay() {
+            const months = parseInt(document.getElementById('projectionMonths').value);
+            const years = Math.floor(months / 12);
+            const remainingMonths = months % 12;
+            
+            let displayText = `${months} month${months > 1 ? 's' : ''}`;
+            if (years > 0) {
+                displayText += ` (${years} year${years > 1 ? 's' : ''}`;
+                if (remainingMonths > 0) {
+                    displayText += `, ${remainingMonths} month${remainingMonths > 1 ? 's' : ''}`;
+                }
+                displayText += ')';
+            }
+            
+            document.getElementById('monthsDisplay').textContent = displayText;
+        }
+
+        function showSliderTooltip(event) {
+            const slider = event.target;
+            const tooltip = document.getElementById('sliderTooltip');
+            const months = parseInt(slider.value);
+            const projectionDate = getProjectionDate(months);
+            
+            tooltip.textContent = `${getMonthName(projectionDate.month)} ${projectionDate.year}`;
+            
+            // Position tooltip
+            const sliderRect = slider.getBoundingClientRect();
+            const sliderWidth = sliderRect.width;
+            const thumbPosition = ((months - slider.min) / (slider.max - slider.min)) * sliderWidth;
+            
+            tooltip.style.left = `${thumbPosition}px`;
+            tooltip.classList.add('show');
+        }
+
+        function hideSliderTooltip() {
+            document.getElementById('sliderTooltip').classList.remove('show');
+        }
+        
+        function updateCommitmentBorder(commitmentElement) {
+            const nameInput = commitmentElement.querySelector('[data-field="name"]');
+            const amountInput = commitmentElement.querySelector('[data-field="amount"]');
+            
+            const hasName = nameInput.value.trim().length > 0;
+            const hasAmount = parseFloat(amountInput.value) > 0;
+            
+            // Remove existing state classes
+            commitmentElement.classList.remove('empty', 'partial', 'filled');
+            
+            if (hasName && hasAmount) {
+                commitmentElement.classList.add('filled'); // Green border
+            } else if (hasName || hasAmount) {
+                commitmentElement.classList.add('partial'); // Yellow/orange border
+            } else {
+                commitmentElement.classList.add('empty'); // Gray border
+            }
         }
 
         function addCommitment() {
             commitmentCount++;
             const commitmentDiv = document.createElement('div');
-            commitmentDiv.className = 'commitment-item';
+            commitmentDiv.className = 'commitment-item empty'; // Start with empty state
             commitmentDiv.id = `commitment-${commitmentCount}`;
             
             commitmentDiv.innerHTML = `
                 <div style="flex: 2;">
-                    <input type="text" placeholder="e.g., Rent, Car payment..." data-field="name">
+                    <input type="text" placeholder=" e.g., Rent, Car payment..." data-field="name" style="height: 20px; font-size: 15px;">
                 </div>
                 <div style="flex: 1;">
-                    <input type="number" placeholder="Amount (RM)" step="0.01" min="0" data-field="amount">
+                    <input type="number" placeholder=" Amount (RM)" step="0.01" min="0" data-field="amount" style="height: 20px; font-size: 15px;">
                 </div>
                 <div style="flex: 1;">
-                    <select data-field="category">
-                        ${categories.map(cat => `<option value="${cat}">${cat}</option>`).join('')}
+                    <select data-field="category" style="height: 20px; font-size: 15px;">
+                    ${categories.map(cat => `<option value="${cat}">${cat}</option>`).join('')}
                     </select>
                 </div>
                 <button class="btn btn-danger" onclick="removeCommitment(${commitmentCount})">
                     <i class="fas fa-trash"></i>
                 </button>
             `;
+            
+            // Add event listeners to update border color on input
+            const nameInput = commitmentDiv.querySelector('[data-field="name"]');
+            const amountInput = commitmentDiv.querySelector('[data-field="amount"]');
+            
+            nameInput.addEventListener('input', () => updateCommitmentBorder(commitmentDiv));
+            amountInput.addEventListener('input', () => updateCommitmentBorder(commitmentDiv));
             
             document.getElementById('commitments').appendChild(commitmentDiv);
         }
@@ -498,10 +645,10 @@
             const commitments = collectCommitments();
             const currentSavings = parseFloat(document.getElementById('currentSavings').value) || 0;
             const grossMonthlySalary = parseFloat(document.getElementById('monthlyIncome').value) || 0;
-            const projectionYears = parseInt(document.getElementById('projectionYears').value);
-            const taxRate = parseFloat(document.getElementById('taxRate').value) / 100 || 0.25;
-            const inflationRate = parseFloat(document.getElementById('inflationRate').value) / 100 || 0.03;
-            const savingsInterestRate = parseFloat(document.getElementById('interestRate').value) / 100 || 0.05;
+            const projectionMonths = parseInt(document.getElementById('projectionMonths').value);
+            const taxRate = parseFloat(document.getElementById('taxRate').value) / 100 || 0.14;
+            const inflationRate = parseFloat(document.getElementById('inflationRate').value) / 100 || 0;
+            const savingsInterestRate = parseFloat(document.getElementById('interestRate').value) / 100 || 0;
 
             // Validation
             if (grossMonthlySalary <= 0) {
@@ -521,7 +668,7 @@
                 monthly_commitments: commitments,
                 current_savings: currentSavings,
                 gross_monthly_salary: grossMonthlySalary,
-                projection_years: projectionYears,
+                projection_months: projectionMonths,
                 tax_rate: taxRate,
                 inflation_rate: inflationRate,
                 savings_interest_rate: savingsInterestRate
@@ -658,8 +805,7 @@
                             },
                             ticks: {
                                 callback: function(value) {
-                                    return ''
-                         + formatNumber(value);
+                                    return 'RM ' + formatNumber(value);
                                 }
                             }
                         },
@@ -676,8 +822,7 @@
                             },
                             ticks: {
                                 callback: function(value) {
-                                    return ''
-                         + formatNumber(value);
+                                    return 'RM ' + formatNumber(value);
                                 }
                             }
                         }
