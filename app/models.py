@@ -10,7 +10,7 @@ class FinancialInput(BaseModel):
     monthly_commitments: List[Commitment]
     current_savings: float = Field(..., ge=0)
     gross_monthly_salary: float = Field(..., gt=0)
-    projection_years: int = Field(..., ge=1, le=50)
+    projection_months: int = Field(..., ge=1, le=360)
     tax_rate: float = Field(default=0.25, ge=0, le=0.5)
     inflation_rate: float = Field(default=0.03, ge=0, le=0.15)
     savings_interest_rate: float = Field(default=0.05, ge=0, le=0.20)
@@ -29,4 +29,4 @@ class MonthlyProjection(BaseModel):
 class ProjectionResponse(BaseModel):
     summary: Dict[str, Any]
     monthly_projections: List[MonthlyProjection]
-    yearly_summary: List[Dict[str, Any]]
+    monthly_summary: List[Dict[str, Any]]
