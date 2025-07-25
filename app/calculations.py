@@ -82,14 +82,12 @@ def calculate_projections(data: FinancialInput) -> ProjectionResponse:
         monthly_summaries.append(monthly_summary)
     
     # Calculate summary statistics
-    final_savings = current_savings
-    total_saved = final_savings - data.current_savings
+    total_savings = current_savings
     final_projection = monthly_projections[-1]
     
     summary = {
         "initial_savings": data.current_savings,
-        "final_savings": final_savings,
-        "total_amount_saved": total_saved,
+        "total_savings": total_savings,
         "initial_monthly_savings": initial_monthly_savings,
         "final_monthly_savings": final_projection.monthly_savings,
         "projection_period_months": data.projection_months,
