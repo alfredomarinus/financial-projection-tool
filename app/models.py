@@ -13,7 +13,6 @@ class FinancialInput(BaseModel):
     projection_months: int = Field(..., ge=1, le=360)
     tax_rate: float = Field(default=0.25, ge=0, le=0.5)
     inflation_rate: float = Field(default=0.03, ge=0, le=0.15)
-    savings_interest_rate: float = Field(default=0.05, ge=0, le=0.20)
 
 class MonthlyProjection(BaseModel):
     month: int

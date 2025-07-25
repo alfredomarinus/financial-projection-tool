@@ -428,10 +428,6 @@
                             <label for="inflationRate">Annual Inflation Rate (%)</label>
                             <input type="number" id="inflationRate" step="0.01" min="0" max="15" value="0" placeholder="0">
                         </div>
-                        <div class="input-group">
-                            <label for="interestRate">Savings Interest Rate (%)</label>
-                            <input type="number" id="interestRate" step="0.01" min="0" max="20" value="0" placeholder="0">
-                        </div>
                     </div>
                 </div>
             </div>
@@ -648,7 +644,6 @@
             const projectionMonths = parseInt(document.getElementById('projectionMonths').value);
             const taxRate = parseFloat(document.getElementById('taxRate').value) / 100 || 0.14;
             const inflationRate = parseFloat(document.getElementById('inflationRate').value) / 100 || 0;
-            const savingsInterestRate = parseFloat(document.getElementById('interestRate').value) / 100 || 0;
 
             // Validation
             if (grossMonthlySalary <= 0) {
@@ -670,8 +665,7 @@
                 gross_monthly_salary: grossMonthlySalary,
                 projection_months: projectionMonths,
                 tax_rate: taxRate,
-                inflation_rate: inflationRate,
-                savings_interest_rate: savingsInterestRate
+                inflation_rate: inflationRate
             };
 
             try {
