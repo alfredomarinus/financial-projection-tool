@@ -49,8 +49,9 @@ def calculate_projections(data: FinancialInput) -> ProjectionResponse:
         # Calculate monthly savings
         monthly_savings = adjusted_net_salary - total_adjusted_commitments
         
-        # Calculate current savings (compound monthly)
-        current_savings = current_savings + monthly_savings
+        # Apply interest to current savings (compound monthly)
+        monthly_interest_rate = data.savings_interest_rate / 12
+        current_savings = current_savings * (1 + monthly_interest_rate) + monthly_savings
         
         projection = MonthlyProjection(
             month=month,
@@ -75,7 +76,8 @@ def calculate_projections(data: FinancialInput) -> ProjectionResponse:
             "net_income": adjusted_net_salary,
             "total_commitments": total_adjusted_commitments,
             "monthly_saved": monthly_savings,
-            "total_savings": current_savings
+            "total_savings": current_savings,
+            "interest_earned": current_savings * monthly_interest_rate if month_num > 0 else 0
         }
         monthly_summaries.append(monthly_summary)
     
@@ -89,6 +91,7 @@ def calculate_projections(data: FinancialInput) -> ProjectionResponse:
         "initial_monthly_savings": initial_monthly_savings,
         "final_monthly_savings": final_projection.monthly_savings,
         "projection_period_months": data.projection_months,
+        "total_interest_earned": sum(p.total_savings for p in monthly_projections) - data.current_savings - sum(p.monthly_savings for p in monthly_projections),
         "average_monthly_savings": sum(p.monthly_savings for p in monthly_projections) / len(monthly_projections),
         "financial_independence_months": None
     }
